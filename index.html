@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コートダジュール 記録ツール</title>
+<style>
+  body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:#FFFEF3;color:#5B331E;
+       max-width:480px;margin:0 auto;padding:24px 16px;line-height:1.6;}
+  h1{font-size:18px;} a{display:block;margin:8px 0;padding:12px 14px;background:#fff;border:1px solid #eee3d6;
+     border-radius:12px;color:#5B331E;text-decoration:none;font-weight:600;}
+  a:active{background:#fff0f0;} small{color:#866134;}
+</style>
+</head>
+<body>
+  <h1>🍰 コートダジュール 記録ツール</h1>
+  <p><small>LINEのリッチメニューから開く想定の入力フォームです。</small></p>
+  <a href="form.html?mode=inventory">閉店残を入力</a>
+  <a href="form.html?mode=production">製造数を入力</a>
+  <a href="form.html?mode=delivery">配送を入力</a>
+  <a href="form.html?mode=adjust">調整（予測に±）</a>
+  <p><small>バックエンド（取込・予測・LINE送信）は別環境で稼働。ここは入力/閲覧UIのみ。</small></p>
+</body>
+</html>

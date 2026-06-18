@@ -1,0 +1,9 @@
+# 静的アセットのみ。秘匿情報・DB・トークンは絶対に置かない
+.env
+.env.*
+*.db
+*.db.bak-*
+token*.json
+*credentials*.json
+logs/
+samples/

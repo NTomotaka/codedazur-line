@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>コートダジュール 記録</title>
+<style>
+  :root { --pink:#F69D9D; --choco:#5B331E; --cream:#FFFEF3; --caramel:#866134; --line:#eee3d6; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;
+         background:var(--cream); color:var(--choco); padding:10px 12px 150px; }
+  h1 { font-size:17px; margin:2px 0 10px; display:flex; align-items:center; gap:8px; }
+  .mode-badge { font-size:12px; background:var(--caramel); color:#fff; padding:3px 10px; border-radius:12px; }
+  .stores { display:flex; gap:7px; margin-bottom:10px; }
+  .store-btn { flex:1; padding:11px 0; border:2px solid var(--line); background:#fff; border-radius:12px;
+               font-size:15px; font-weight:700; color:var(--choco); }
+  .store-btn.on { border-color:var(--pink); background:#fff0f0; }
+  .chips { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:8px; -webkit-overflow-scrolling:touch; }
+  .chip { flex:0 0 auto; padding:7px 14px; border:1px solid var(--line); background:#fff; border-radius:16px;
+          font-size:13px; font-weight:600; color:var(--caramel); white-space:nowrap; }
+  .chip.on { background:var(--choco); color:#fff; border-color:var(--choco); }
+  .search { width:100%; height:44px; border:1px solid var(--line); border-radius:12px; padding:0 14px;
+            font-size:16px; background:#fff; color:var(--choco); margin-bottom:8px; }
+  .tray { background:#fff7f7; border:1px solid var(--pink); border-radius:12px; padding:8px 10px; margin-bottom:10px; }
+  .tray.empty { display:none; }
+  .tray-title { font-size:12px; color:var(--caramel); font-weight:700; margin-bottom:6px; }
+  .dept-h { font-size:12px; color:var(--caramel); font-weight:700; margin:12px 2px 6px; position:sticky; top:0;
+            background:var(--cream); padding:3px 0; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:8px;
+         background:#fff; border:1px solid var(--line); border-radius:11px; padding:8px 10px; margin-bottom:7px; }
+  .row.has { border-color:var(--pink); background:#fff5f5; }
+  .nm { font-size:14px; font-weight:600; line-height:1.25; }
+  .nm small { display:block; font-size:10px; color:#b3a; font-weight:500; }
+  .stepper { display:flex; align-items:center; flex:0 0 auto; }
+  .stepper button { width:38px; height:38px; border:none; border-radius:9px; font-size:21px;
+                    background:#f3ece1; color:var(--choco); font-weight:700; }
+  .stepper button:active { background:var(--pink); color:#fff; }
+  .stepper input { width:46px; height:38px; text-align:center; font-size:18px; font-weight:700;
+                   border:none; background:transparent; color:var(--choco); -moz-appearance:textfield; }
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{ -webkit-appearance:none; }
+  .empty-note { text-align:center; color:#b3a; font-size:13px; padding:24px 0; }
+  .submit { position:fixed; left:0; right:0; bottom:0; padding:10px 12px; background:var(--cream); border-top:1px solid var(--line); }
+  .submit button { width:100%; height:52px; border:none; border-radius:14px; font-size:17px; font-weight:700; background:var(--pink); color:#fff; }
+  .submit button:disabled { background:#ddd; }
+  .cnt { font-size:13px; }
+  .msg { text-align:center; font-size:12px; color:var(--caramel); margin-top:6px; min-height:16px; white-space:pre-line; }
+  .free-section { margin-top:14px; }
+  .free-h { font-size:12px; color:var(--caramel); font-weight:700; margin:0 2px 6px; }
+  .free-row { display:flex; align-items:center; gap:6px; margin-bottom:7px; }
+  .free-name { flex:1; height:38px; border:1px solid var(--line); border-radius:10px; padding:0 10px;
+               font-size:14px; background:#fff; color:var(--choco); }
+  .free-name:focus { border-color:var(--pink); outline:none; }
+  .free-del { width:32px; height:32px; border:none; border-radius:8px; background:#f3ece1;
+              color:var(--caramel); font-size:18px; flex:0 0 auto; }
+  .free-add { width:100%; height:40px; border:1px dashed var(--caramel); border-radius:10px;
+              background:transparent; color:var(--caramel); font-size:14px; font-weight:600; margin-top:4px; }
+</style>
+</head>
+<body>
+  <h1>🍰 記録 <span class="mode-badge" id="modeBadge">閉店残</span></h1>
+
+  <div class="stores" id="stores"></div>
+  <input class="search" id="search" type="search" placeholder="商品名で検索 ／ リストにない商品の入力もこちらから" autocomplete="off">
+  <div class="chips" id="chips"></div>
+
+  <div class="tray empty" id="tray">
+    <div class="tray-title">入力中（送信される品）</div>
+    <div id="trayList"></div>
+  </div>
+
+  <div id="list"></div>
+
+  <!-- 自由入力 -->
+  <div class="free-section">
+    <div class="free-h">リストにない商品</div>
+    <div id="freeList"></div>
+    <button class="free-add" id="freeAdd">＋ 追加</button>
+  </div>
+
+  <div class="submit">
+    <button id="send">送信する <span class="cnt" id="cnt"></span></button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  var LIFF_ID = "2010316383-SEigGY9j";
+  var POST_URL = "https://script.google.com/macros/s/AKfycbwjdpVTk1aLCdcIjmYUbtbFZ02RmUXcztKja4hym9SFBwHqr3oOwh1Ax-dhgMqQLNwI/exec";
+  var WEBHOOK_KEY = "cdz_ca99ac3311e00dc1f5ce4aa7";
+  var _m = new URLSearchParams(location.search).get("mode");
+  var MODE = (_m === "production" || _m === "delivery" || _m === "adjust") ? _m : "inventory";
+  var IS_ADJ = (MODE === "adjust");   // 調整モード＝予測必要数への±上乗せ（その日だけ）
+  var USER_ID = "";
+
+  var STORE_OPTS = {
+    inventory:  [["本店","本店"],["メゾン","メゾン"],["つくばイオン","イオン"]],
+    production: [["本店","本店"],["メゾン","メゾン"],["つくばイオン","イオン"]],
+    delivery:   [["本店","本店便"],["メゾン","メゾン便"]],
+    adjust:     [["本店","本店"],["メゾン","メゾン"],["つくばイオン","イオン"]]
+  }[MODE];
+  var MODE_UI = {
+    inventory:  { badge:"閉店残", prefix:"在庫 " },
+    production: { badge:"製造数", prefix:"製造 " },
+    delivery:   { badge:"配送",   prefix:"配送 " },
+    adjust:     { badge:"調整",   prefix:"調整 " }
+  }[MODE];
+  document.getElementById("modeBadge").textContent = MODE_UI.badge;
+
+  // 調整モードは「いつ効かせるか」の日付を選ぶ（既定=今日）。他モードは非表示。
+  var ADJ_DATE = "";
+  (function setupDate(){
+    if (!IS_ADJ) return;
+    var d = new Date();
+    var iso = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+    ADJ_DATE = iso;
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "margin:0 0 10px;font-size:13px;color:var(--caramel);font-weight:700;";
+    wrap.innerHTML = '効かせる日: <input id="adjDate" type="date" value="'+iso+'" '+
+      'style="height:38px;border:1px solid var(--line);border-radius:10px;padding:0 8px;'+
+      'font-size:15px;background:#fff;color:var(--choco);margin-left:6px;">';
+    var h1 = document.querySelector("h1");
+    h1.parentNode.insertBefore(wrap, h1.nextSibling);
+    wrap.querySelector("#adjDate").addEventListener("change", function(e){ ADJ_DATE = e.target.value; });
+  })();
+
+  var store = STORE_OPTS[0][0];
+  var DATA = null;       // products_by_store.json
+  var qty = {};          // code -> quantity（店舗をまたいでも保持。送信は現在店舗分のみ）
+  var qtyStore = {};     // code -> 入力された店舗（誤混在防止）
+  var activeCat = "nama_cake"; // カテゴリchip（初期=生ケーキ＝日次入力で最頻。全件一括描画を避ける）
+  var kw = "";           // 検索語
+
+  // ── 店舗タブ ──
+  var storesEl = document.getElementById("stores");
+  STORE_OPTS.forEach(function(opt, i){
+    var b = document.createElement("button");
+    b.className = "store-btn" + (i===0?" on":"");
+    b.dataset.store = opt[0]; b.textContent = opt[1];
+    storesEl.appendChild(b);
+  });
+  storesEl.addEventListener("click", function(e){
+    var b = e.target.closest(".store-btn"); if(!b) return;
+    store = b.dataset.store;
+    [].forEach.call(storesEl.children, function(x){ x.classList.toggle("on", x===b); });
+    render();
+  });
+
+  // ── 検索 ──
+  document.getElementById("search").addEventListener("input", function(e){
+    kw = (e.target.value||"").trim().toLowerCase(); render();
+  });
+
+  function norm(s){ return (s||"").toLowerCase(); }
+
+  function buildChips(){
+    var el = document.getElementById("chips"); el.innerHTML = "";
+    var order = ["all"].concat(DATA.cat_order);
+    order.forEach(function(c){
+      var b = document.createElement("button");
+      b.className = "chip" + (c===activeCat?" on":"");
+      b.dataset.cat = c;
+      b.textContent = (c==="all") ? "すべて" : DATA.cats[c];
+      el.appendChild(b);
+    });
+    el.addEventListener("click", function(e){
+      var b = e.target.closest(".chip"); if(!b) return;
+      activeCat = b.dataset.cat;
+      [].forEach.call(el.children, function(x){ x.classList.toggle("on", x===b); });
+      render();
+    });
+  }
+
+  // 現在店舗の対象コード一覧（カテゴリ・検索で絞込、部門ごとにまとめる）
+  function visibleByDept(){
+    var codes = DATA.stores[store] || [];
+    var groups = {}; var order = [];
+    codes.forEach(function(code){
+      var p = DATA.products[String(code)]; if(!p) return;
+      var name = p[0], cat = p[1], dept = p[2];
+      if (activeCat !== "all" && cat !== activeCat) return;
+      if (kw && norm(name).indexOf(kw) === -1) return;
+      if (!groups[dept]) { groups[dept] = []; order.push(dept); }
+      groups[dept].push({ code:code, name:name, cat:cat });
+    });
+    return { groups:groups, order:order };
+  }
+
+  function stepperHTML(code){
+    var v = qty[code] || 0;
+    var minAttr = IS_ADJ ? '' : 'min="0" ';
+    return '<div class="stepper">'+
+      '<button data-d="-1" data-code="'+code+'">−</button>'+
+      '<input type="number" inputmode="numeric" '+minAttr+'value="'+v+'" data-code="'+code+'">'+
+      '<button data-d="1" data-code="'+code+'">＋</button></div>';
+  }
+
+  function render(){
+    if (!DATA) return;
+    renderTray();
+    var listEl = document.getElementById("list"); listEl.innerHTML = "";
+    var vis = visibleByDept();
+    if (vis.order.length === 0){
+      listEl.innerHTML = '<div class="empty-note">該当する商品がありません</div>';
+      updateCnt(); return;
+    }
+    var html = "";
+    vis.order.forEach(function(dept){
+      html += '<div class="dept-h">'+ (dept||"その他") +'</div>';
+      vis.groups[dept].forEach(function(it){
+        var has = nz(it.code);
+        html += '<div class="row'+(has?' has':'')+'" data-code="'+it.code+'">'+
+                  '<div class="nm">'+it.name+'<small>'+DATA.cats[it.cat]+'</small></div>'+
+                  stepperHTML(it.code)+'</div>';
+      });
+    });
+    listEl.innerHTML = html;
+    updateCnt();
+  }
+
+  function renderTray(){
+    var tray = document.getElementById("tray"), tl = document.getElementById("trayList");
+    var codes = Object.keys(qty).filter(function(c){ return nz(c) && qtyStore[c] === store; });
+    if (codes.length === 0){ tray.classList.add("empty"); tl.innerHTML=""; return; }
+    tray.classList.remove("empty");
+    var html = "";
+    codes.forEach(function(code){
+      var p = DATA.products[String(code)];
+      html += '<div class="row has" data-code="'+code+'">'+
+                '<div class="nm">'+p[0]+'</div>'+ stepperHTML(code)+'</div>';
+    });
+    tl.innerHTML = html;
+  }
+
+  function setQty(code, v){
+    v = isNaN(v)?0:v;
+    if (!IS_ADJ) v = Math.max(0, v);   // 通常モードは0以上。調整モードは負も許可（−N）
+    if (v === 0){ delete qty[code]; delete qtyStore[code]; }
+    else { qty[code] = v; qtyStore[code] = store; }
+  }
+  // 入力済み判定（通常=正のみ / 調整=0以外）
+  function nz(code){ var v = qty[code]||0; return IS_ADJ ? v !== 0 : v > 0; }
+  function signed(v){ return (IS_ADJ && v > 0) ? ("+"+v) : String(v); }
+
+  // 増減・直接入力（list と tray 共通）
+  document.body.addEventListener("click", function(e){
+    var b = e.target.closest(".stepper button"); if(!b) return;
+    var code = b.dataset.code;
+    setQty(code, (qty[code]||0) + parseInt(b.dataset.d,10));
+    render();
+  });
+  document.body.addEventListener("change", function(e){
+    var inp = e.target.closest(".stepper input"); if(!inp) return;
+    setQty(inp.dataset.code, parseInt(inp.value||"0",10));
+    render();
+  });
+
+  // ── 自由入力 ──
+  var freeRows = [];  // [{id, name, qty}]
+  var freeIdSeq = 0;
+
+  function freeRowHTML(id, name, qty){
+    var q = qty || 0;
+    return '<div class="free-row" data-fid="'+id+'">'+
+      '<input class="free-name" type="text" placeholder="商品名を入力" value="'+name.replace(/"/g,'&quot;')+'" data-fid="'+id+'">'+
+      '<div class="stepper">'+
+        '<button data-d="-1" data-fid="'+id+'">−</button>'+
+        '<input type="number" inputmode="numeric" '+(IS_ADJ?'':'min="0" ')+'value="'+q+'" data-fid="'+id+'">'+
+        '<button data-d="1" data-fid="'+id+'">＋</button>'+
+      '</div>'+
+      '<button class="free-del" data-fid-del="'+id+'">×</button>'+
+    '</div>';
+  }
+
+  function renderFree(){
+    var el = document.getElementById("freeList");
+    el.innerHTML = freeRows.map(function(r){ return freeRowHTML(r.id, r.name, r.qty); }).join("");
+    updateCnt();
+  }
+
+  function freeFind(id){ return freeRows.find(function(r){ return r.id === id; }); }
+
+  document.getElementById("freeAdd").addEventListener("click", function(){
+    freeRows.push({id: ++freeIdSeq, name: "", qty: 0});
+    renderFree();
+    // 追加した行の入力欄にフォーカス
+    var inputs = document.querySelectorAll(".free-name");
+    if (inputs.length) inputs[inputs.length-1].focus();
+  });
+
+  document.getElementById("freeList").addEventListener("input", function(e){
+    var fid = e.target.dataset.fid ? parseInt(e.target.dataset.fid) : null;
+    if (!fid) return;
+    var row = freeFind(fid); if (!row) return;
+    if (e.target.classList.contains("free-name")){
+      row.name = e.target.value.trim();
+    } else {
+      var fv = parseInt(e.target.value||"0",10)||0;
+      row.qty = IS_ADJ ? fv : Math.max(0, fv);
+    }
+    updateCnt();
+  });
+
+  document.getElementById("freeList").addEventListener("click", function(e){
+    var b = e.target.closest("[data-d][data-fid]");
+    if (b){
+      var fid = parseInt(b.dataset.fid), row = freeFind(fid); if (!row) return;
+      var nv = row.qty + parseInt(b.dataset.d,10);
+      row.qty = IS_ADJ ? nv : Math.max(0, nv);
+      renderFree(); return;
+    }
+    var del = e.target.closest("[data-fid-del]");
+    if (del){
+      var fid2 = parseInt(del.dataset.fidDel);
+      freeRows = freeRows.filter(function(r){ return r.id !== fid2; });
+      renderFree();
+    }
+  });
+
+  function freeEntries(){
+    return freeRows.filter(function(r){ return r.name && (IS_ADJ ? r.qty !== 0 : r.qty > 0); });
+  }
+
+  function currentEntries(){
+    return Object.keys(qty)
+      .filter(function(c){ return nz(c) && qtyStore[c] === store; })
+      .map(function(c){ return c + ":" + signed(qty[c]); });
+  }
+  function updateCnt(){
+    var codes = Object.keys(qty).filter(function(c){ return nz(c) && qtyStore[c] === store; });
+    var entryCnt = codes.length + freeEntries().length;
+    if (IS_ADJ){
+      // 調整は「品数」を表示（±の合算は意味が薄い）
+      document.getElementById("cnt").textContent = entryCnt > 0 ? "（"+entryCnt+"品）" : "";
+    } else {
+      var total = codes.reduce(function(s,c){ return s + qty[c]; }, 0);
+      freeEntries().forEach(function(r){ total += r.qty; });
+      document.getElementById("cnt").textContent = total > 0 ? "（"+total+"個）" : "";
+      entryCnt = total;
+    }
+    document.getElementById("send").disabled = (entryCnt === 0);
+  }
+  function buildText(){
+    var parts = currentEntries();
+    freeEntries().forEach(function(r){ parts.push("["+r.name+"]:"+signed(r.qty)); });
+    var datePart = IS_ADJ && ADJ_DATE ? (ADJ_DATE + " ") : "";
+    return MODE_UI.prefix + datePart + store + " " + parts.join(" ");
+  }
+
+  // ── 送信 ──
+  var sendBtn = document.getElementById("send");
+  function setMsg(t){ document.getElementById("msg").textContent = t; }
+  sendBtn.addEventListener("click", function(){
+    if (!USER_ID){ setMsg("ユーザー情報を取得中。数秒後に再度お試しください"); return; }
+    var entries = currentEntries();
+    if (entries.length === 0){ setMsg("数量を入れてください"); return; }
+    sendBtn.disabled = true; setMsg("送信中…");
+    var text = buildText();
+    fetch(POST_URL + "?k=" + encodeURIComponent(WEBHOOK_KEY), {
+      method:"POST", mode:"no-cors",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify({ source:"form", userId:USER_ID, text:text })
+    }).then(function(){
+      if (IS_ADJ){
+        setMsg("✅ "+store+"（"+ADJ_DATE+"）の調整 "+(entries.length+freeEntries().length)+"品を送信しました\n結果はLINEに届きます");
+      } else {
+        var totalQty = entries.reduce(function(s,e){ var q=parseInt(e.split(":")[1]||"0"); return s+q; },0);
+        freeEntries().forEach(function(r){ totalQty += r.qty; });
+        setMsg("✅ "+store+" 計"+totalQty+"個を送信しました\n結果はLINEに届きます");
+      }
+      freeRows = []; renderFree();
+      setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1400);
+    }).catch(function(err){
+      setMsg("送信失敗："+(err && err.message ? err.message : err));
+      sendBtn.disabled = false;
+    });
+  });
+
+  // ── データ読込 ＆ LIFF ──
+  fetch("products_by_store.json?v=20260610").then(function(r){ return r.json(); })
+    .then(function(j){ DATA = j; buildChips(); render(); })
+    .catch(function(err){ setMsg("商品データ読込失敗："+err); });
+
+  var IS_PREVIEW = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname)
+                   || new URLSearchParams(location.search).get("preview") === "1";
+  if (IS_PREVIEW){
+    USER_ID = "PREVIEW";  // ローカル確認用：LIFFを使わず描画だけ確認
+  } else {
+    liff.init({ liffId: LIFF_ID }).then(function(){
+      if (!liff.isLoggedIn()){ liff.login(); return; }
+      return liff.getProfile().then(function(p){ USER_ID = p.userId; });
+    }).catch(function(err){ setMsg("LIFF初期化失敗："+(err && err.message ? err.message : err)); });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コートダジュール ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+ body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:#FFFEF3;color:#5B331E;padding:14px 14px 40px}
+ h1{font-size:18px;margin:4px 0 2px} .ts{color:#866134;font-size:12px;margin-bottom:12px}
+ .kpis{display:flex;gap:8px;margin-bottom:14px}
+ .kpi{flex:1;background:#fff;border:1px solid #eee3d6;border-radius:14px;padding:10px 8px;text-align:center}
+ .kpi .v{font-size:18px;font-weight:700;color:#5B331E} .kpi .l{font-size:11px;color:#866134;margin-top:2px}
+ section{background:#fff;border:1px solid #eee3d6;border-radius:14px;padding:12px 14px;margin-bottom:14px}
+ h2{font-size:14px;margin:0 0 10px;color:#866134}
+ .note{font-size:12px;margin:8px 0 0} .warn{color:#E18600} .ok{color:#9BBF35} .muted{color:#a89}
+ details{background:#fff;border:1px solid #eee3d6;border-radius:14px;padding:10px 14px}
+ summary{font-size:14px;color:#866134;font-weight:600}
+ pre{white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.5;margin:8px 0 0}
+ canvas{max-height:240px}
+ .detail-link{display:block;background:#5B331E;color:#fff;text-align:center;padding:12px;border-radius:14px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:14px}
+</style></head><body>
+ <h1>🍰 コートダジュール ダッシュボード</h1>
+ <div class="ts">最終更新: 2026-06-18 15:29 JST ／ 管理者専用</div>
+ <a class="detail-link" href="https://cdz-dashboard.wellcon.biz" target="_blank">📊 詳細ダッシュボードを開く →</a>
+ <div class="kpis">
+   <div class="kpi"><div class="v">185万円</div><div class="l">本日予測売上</div></div>
+   <div class="kpi"><div class="v">約2,484円</div><div class="l">廃棄/店舗日</div></div>
+   <div class="kpi"><div class="v">5%</div><div class="l">記録達成率</div></div>
+ </div>
+ <section><h2>📊 店舗別 予測売上（万円）</h2><canvas id="pred"></canvas></section>
+ <section><h2>🏭 工場別 製造割当（カテゴリ別）</h2><canvas id="factory"></canvas></section>
+ <section><h2>🗑 廃棄ロス / 📥 入力</h2>
+   <canvas id="cov"></canvas>
+   <p class="note">記録 4日/4店舗日・年換算 約246万円</p>
+   <p class="note warn">⏳ 昨日未記録: 本店 / つくばイオン / メゾン</p>
+ </section>
+ <details><summary>📋 今日の生産・配送プラン（詳細）</summary><pre>☀️ おはようございます！
+📅 2026-06-18（木） / 天気: 雨 (19-22℃)
+
+📊 予測売上（3店舗合計 185万円）
+  本店     66.1万円 ━━━━━━
+  つくばイオン 42.5万円 ━━━━
+  メゾン    76.2万円 ━━━━━━━
+
+🍰 必要生産数（カテゴリ別） 📂 前日繰越データなし（必要数を全量計上）
+  本店: 生378 / 半生165 / 焼311 / 冷14
+  つくばイオン: 生251 / 半生94 / 焼163 / 冷3
+  メゾン: 生451 / 半生187 / 焼323 / 冷20
+
+🏭 工場別の製造割当（新規製造分・イオン分含む）
+  本店工場: 生504 / 半生212 / 焼393 / 冷16
+  メゾン工場: 生576 / 半生234 / 焼404 / 冷21
+  ※イオン分は本店・メゾン工場で半分ずつ
+
+🚚 配送計画（イオンへ 1便構成）
+  【平日朝便】
+    09:30 本店→つくばイオン 生126 / 半生47 / 焼82 / 冷2
+    09:30 メゾン→つくばイオン 生125 / 半生47 / 焼81 / 冷1
+
+⚠️ 注意
+  ・生クリームデコ: 最低5個キープ
+  ・雨予報: 本店・つくばイオンは小幅減 / メゾンは大きく減る傾向
+  ・15時に再判断（ショーケース充足率チェック）
+
+🗑 昨日の閉店残が未記録: 本店 ・ つくばイオン ・ メゾン
+  → 紙メモを撮って『記録コマンド』を送るだけで反映されます</pre></details>
+<script>
+ var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [66.1, 42.5, 76.2]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [504, 576]}, {"label": "半生", "color": "#E18600", "data": [212, 234]}, {"label": "焼", "color": "#866134", "data": [393, 404]}, {"label": "冷", "color": "#42B6EE", "data": [16, 21]}]}, "cov": {"recorded": 1, "possible": 21, "rate": 5}};
+ var co = {plugins:{legend:{labels:{font:{size:11}}}},maintainAspectRatio:false,scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}};
+ new Chart(document.getElementById('pred'),{type:'bar',data:{labels:D.pred.labels,datasets:[{label:'予測(万円)',data:D.pred.values,backgroundColor:'#F69D9D'}]},options:co});
+ new Chart(document.getElementById('factory'),{type:'bar',data:{labels:D.factory.stores,datasets:D.factory.cats.map(function(c){return {label:c.label,data:c.data,backgroundColor:c.color};})},options:{plugins:{legend:{labels:{font:{size:11}}}},maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true}}}});
+ new Chart(document.getElementById('cov'),{type:'doughnut',data:{labels:['記録済','未記録'],datasets:[{data:[D.cov.recorded, Math.max(0,D.cov.possible-D.cov.recorded)],backgroundColor:['#9BBF35','#eee3d6']}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
+</script>
+</body></html>
