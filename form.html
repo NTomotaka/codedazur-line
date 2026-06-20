@@ -376,7 +376,7 @@
   });
 
   // ── データ読込 ＆ LIFF ──
-  fetch("products_by_store.json?v=20260610").then(function(r){ return r.json(); })
+  fetch("products_by_store.json?v=" + Date.now()).then(function(r){ return r.json(); })
     .then(function(j){ DATA = j; buildChips(); render(); })
     .catch(function(err){ setMsg("商品データ読込失敗："+err); });
 
