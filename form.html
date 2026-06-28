@@ -38,6 +38,16 @@
   .stepper input { width:46px; height:38px; text-align:center; font-size:18px; font-weight:700;
                    border:none; background:transparent; color:var(--choco); -moz-appearance:textfield; }
   .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{ -webkit-appearance:none; }
+  /* 閉店残：パック（○個入り×袋数）入力 */
+  .prow { background:#fff; border:1px solid var(--line); border-radius:11px; padding:8px 10px; margin-bottom:7px; }
+  .prow.has { border-color:var(--pink); background:#fff5f5; }
+  .prow .nm { margin-bottom:6px; }
+  .packs { display:flex; flex-direction:column; gap:5px; }
+  .pk-row { display:flex; align-items:center; gap:8px; }
+  .pk-lbl { flex:1; font-size:13px; color:var(--caramel); font-weight:600; }
+  .pk-unit { font-size:12px; color:var(--caramel); width:20px; }
+  .pk-sum { text-align:right; font-size:12px; color:var(--choco); border-top:1px dashed var(--line); padding-top:5px; margin-top:2px; }
+  .pk-sum b { font-size:15px; color:var(--pink); }
   .empty-note { text-align:center; color:#b3a; font-size:13px; padding:24px 0; }
   .submit { position:fixed; left:0; right:0; bottom:0; padding:10px 12px; background:var(--cream); border-top:1px solid var(--line); }
   .submit button { width:100%; height:52px; border:none; border-radius:14px; font-size:17px; font-weight:700; background:var(--pink); color:#fff; }
@@ -125,8 +135,9 @@
 
   var store = STORE_OPTS[0][0];
   var DATA = null;       // products_by_store.json
-  var qty = {};          // code -> quantity（店舗をまたいでも保持。送信は現在店舗分のみ）
+  var qty = {};          // code -> quantity（単品換算の合計。店舗をまたいでも保持・送信は現在店舗分のみ）
   var qtyStore = {};     // code -> 入力された店舗（誤混在防止）
+  var packQty = {};      // code -> {個入りサイズ: 袋数}（閉店残のパック入力。qtyへ単品換算）
   var activeCat = "nama_cake"; // カテゴリchip（初期=生ケーキ＝日次入力で最頻。全件一括描画を避ける）
   var kw = "";           // 検索語
 
@@ -188,10 +199,36 @@
   function stepperHTML(code){
     var v = qty[code] || 0;
     var minAttr = IS_ADJ ? '' : 'min="0" ';
+    // 0は空欄表示にしてタップ即入力できるようにする（現場フィードバック）。プレースホルダで0を示す。
     return '<div class="stepper">'+
       '<button data-d="-1" data-code="'+code+'">−</button>'+
-      '<input type="number" inputmode="numeric" '+minAttr+'value="'+v+'" data-code="'+code+'">'+
+      '<input type="number" inputmode="numeric" '+minAttr+'value="'+(v||"")+'" placeholder="0" data-code="'+code+'">'+
       '<button data-d="1" data-code="'+code+'">＋</button></div>';
+  }
+
+  // 閉店残（在庫）専用：POSの「○個入り」を袋単位で数え、単品換算して送る。
+  // 半生菓子などは棚に「3個入りが5袋」の形で残るため、単品へ暗算する負担をなくす。
+  function packBlockHTML(code, name, catLabel, has){
+    var sizes = DATA.packs[String(code)];        // 例) [2,3,5,10]
+    var pq = packQty[code] || {};
+    function pkRow(n, label, unit){
+      var c = pq[n] || 0;
+      return '<div class="pk-row">'+
+        '<span class="pk-lbl">'+label+'</span>'+
+        '<div class="stepper">'+
+          '<button data-pd="-1" data-code="'+code+'" data-n="'+n+'">−</button>'+
+          '<input type="number" inputmode="numeric" min="0" value="'+(c||"")+'" placeholder="0" data-code="'+code+'" data-n="'+n+'">'+
+          '<button data-pd="1" data-code="'+code+'" data-n="'+n+'">＋</button>'+
+        '</div><span class="pk-unit">'+unit+'</span></div>';
+    }
+    var inner = sizes.map(function(n){ return pkRow(n, n+"個入", "袋"); }).join("");
+    inner += pkRow(1, "バラ(単品)", "個");   // 袋から出したバラ残り用。1個入り＝単品。
+    var singles = qty[code] || 0;
+    return '<div class="prow'+(has?' has':'')+'" data-code="'+code+'">'+
+      '<div class="nm">'+name+'<small>'+catLabel+'</small></div>'+
+      '<div class="packs">'+inner+
+        '<div class="pk-sum">合計 <b>'+singles+'</b> 個</div>'+
+      '</div></div>';
   }
 
   function render(){
@@ -208,9 +245,14 @@
       html += '<div class="dept-h">'+ (dept||"その他") +'</div>';
       vis.groups[dept].forEach(function(it){
         var has = nz(it.code);
-        html += '<div class="row'+(has?' has':'')+'" data-code="'+it.code+'">'+
-                  '<div class="nm">'+it.name+'<small>'+DATA.cats[it.cat]+'</small></div>'+
-                  stepperHTML(it.code)+'</div>';
+        // 閉店残モードかつPOSにパック表記がある商品は「○個入り×袋数」入力にする
+        if (MODE === "inventory" && DATA.packs && DATA.packs[String(it.code)]){
+          html += packBlockHTML(it.code, it.name, DATA.cats[it.cat], has);
+        } else {
+          html += '<div class="row'+(has?' has':'')+'" data-code="'+it.code+'">'+
+                    '<div class="nm">'+it.name+'<small>'+DATA.cats[it.cat]+'</small></div>'+
+                    stepperHTML(it.code)+'</div>';
+        }
       });
     });
     listEl.innerHTML = html;
@@ -237,6 +279,17 @@
     if (v === 0){ delete qty[code]; delete qtyStore[code]; }
     else { qty[code] = v; qtyStore[code] = store; }
   }
+  // パック入力（閉店残）：袋数を持ち、qty[code] を単品換算の合計へ再計算する
+  function setPackQty(code, n, packs){
+    packs = isNaN(packs) ? 0 : Math.max(0, packs);
+    var pq = packQty[code] || {};
+    if (packs === 0) delete pq[n]; else pq[n] = packs;
+    if (Object.keys(pq).length === 0) delete packQty[code]; else packQty[code] = pq;
+    var singles = 0;
+    Object.keys(pq).forEach(function(sz){ singles += parseInt(sz,10) * pq[sz]; });
+    if (singles === 0){ delete qty[code]; delete qtyStore[code]; }
+    else { qty[code] = singles; qtyStore[code] = store; }
+  }
   // 入力済み判定（通常=正のみ / 調整=0以外）
   function nz(code){ var v = qty[code]||0; return IS_ADJ ? v !== 0 : v > 0; }
   function signed(v){ return (IS_ADJ && v > 0) ? ("+"+v) : String(v); }
@@ -244,12 +297,22 @@
   // 増減・直接入力（list と tray 共通）
   document.body.addEventListener("click", function(e){
     var b = e.target.closest(".stepper button"); if(!b) return;
-    var code = b.dataset.code;
-    setQty(code, (qty[code]||0) + parseInt(b.dataset.d,10));
+    // パック入力（閉店残）の袋数ステッパー
+    if (b.dataset.pd !== undefined){
+      var pc = b.dataset.code, pn = b.dataset.n;
+      var cur = (packQty[pc] && packQty[pc][pn]) || 0;
+      setPackQty(pc, pn, cur + parseInt(b.dataset.pd,10));
+      render(); return;
+    }
+    setQty(b.dataset.code, (qty[b.dataset.code]||0) + parseInt(b.dataset.d,10));
     render();
   });
   document.body.addEventListener("change", function(e){
     var inp = e.target.closest(".stepper input"); if(!inp) return;
+    if (inp.dataset.n !== undefined){   // パック入力の袋数直接入力
+      setPackQty(inp.dataset.code, inp.dataset.n, parseInt(inp.value||"0",10));
+      render(); return;
+    }
     setQty(inp.dataset.code, parseInt(inp.value||"0",10));
     render();
   });
@@ -264,7 +327,7 @@
       '<input class="free-name" type="text" placeholder="商品名を入力" value="'+name.replace(/"/g,'&quot;')+'" data-fid="'+id+'">'+
       '<div class="stepper">'+
         '<button data-d="-1" data-fid="'+id+'">−</button>'+
-        '<input type="number" inputmode="numeric" '+(IS_ADJ?'':'min="0" ')+'value="'+q+'" data-fid="'+id+'">'+
+        '<input type="number" inputmode="numeric" '+(IS_ADJ?'':'min="0" ')+'value="'+(q||"")+'" placeholder="0" data-fid="'+id+'">'+
         '<button data-d="1" data-fid="'+id+'">＋</button>'+
       '</div>'+
       '<button class="free-del" data-fid-del="'+id+'">×</button>'+
