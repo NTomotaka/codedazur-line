@@ -38,6 +38,24 @@
   .stepper input { width:46px; height:38px; text-align:center; font-size:18px; font-weight:700;
                    border:none; background:transparent; color:var(--choco); -moz-appearance:textfield; }
   .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{ -webkit-appearance:none; }
+  /* 写真で取り込む（OCR） */
+  .ocr-btn { width:100%; height:46px; border:2px dashed var(--caramel); border-radius:12px;
+             background:#fffdf8; color:var(--caramel); font-size:15px; font-weight:700; margin-bottom:8px; }
+  .ocr-btn:active { background:#fff0e6; }
+  .ocr-status { font-size:13px; color:var(--caramel); text-align:center; min-height:18px; margin-bottom:6px; white-space:pre-line; }
+  .ocr-rev { background:#fff7f7; border:1px solid var(--pink); border-radius:12px; padding:10px; margin-bottom:10px; }
+  .ocr-rev-h { font-size:13px; font-weight:700; color:var(--choco); margin-bottom:8px; }
+  .ocr-item { border-top:1px dashed var(--line); padding-top:6px; margin-top:6px; }
+  .ocr-item:first-child { border-top:none; padding-top:0; margin-top:0; }
+  .ocr-item-h { font-size:13px; font-weight:700; color:var(--choco); display:flex; justify-content:space-between; }
+  .ocr-dd { font-size:11px; color:var(--caramel); font-weight:600; }
+  .ocr-line { display:flex; align-items:center; gap:6px; margin-top:4px; }
+  .ocr-line label { flex:1; font-size:12px; color:var(--caramel); }
+  .ocr-line input { width:56px; height:32px; text-align:center; font-size:15px; font-weight:700;
+                    border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--choco); }
+  .ocr-sub { font-size:11px; color:#b3a; }
+  .ocr-apply { width:100%; height:44px; border:none; border-radius:12px; background:var(--pink);
+               color:#fff; font-size:15px; font-weight:700; margin-top:8px; }
   /* 閉店残：パック（○個入り×袋数）入力 */
   .prow { background:#fff; border:1px solid var(--line); border-radius:11px; padding:8px 10px; margin-bottom:7px; }
   .prow.has { border-color:var(--pink); background:#fff5f5; }
@@ -70,6 +88,15 @@
   <h1>🍰 記録 <span class="mode-badge" id="modeBadge">閉店残</span></h1>
 
   <div class="stores" id="stores"></div>
+
+  <!-- 写真で取り込む（閉店残のみ・半生残シート） -->
+  <div id="ocrBox" style="display:none">
+    <button class="ocr-btn" id="ocrBtn">📷 写真で取り込む（半生残シート）</button>
+    <input id="ocrFile" type="file" accept="image/*" capture="environment" style="display:none">
+    <div class="ocr-status" id="ocrStatus"></div>
+    <div id="ocrReview"></div>
+  </div>
+
   <input class="search" id="search" type="search" placeholder="商品名で検索 ／ リストにない商品の入力もこちらから" autocomplete="off">
   <div class="chips" id="chips"></div>
 
@@ -438,9 +465,154 @@
     });
   });
 
+  // ── 写真で取り込む（OCR・閉店残のみ） ──
+  var OCR_ROWS = [];   // 直近の読み取り結果（編集対象）
+  function ocrStatus(t){ document.getElementById("ocrStatus").textContent = t || ""; }
+
+  // 商品名→代表コード（DATA.products から逆引き）
+  function nameToCode(name){
+    if (!DATA) return null;
+    for (var c in DATA.products){ if (DATA.products[c][0] === name) return c; }
+    return null;
+  }
+
+  // 画像を縮小して dataURL 化（手書きが読める範囲で軽量化）
+  function resizeImage(file, cb){
+    var img = new Image();
+    img.onload = function(){
+      var max = 1600, w = img.width, h = img.height;
+      if (w > max || h > max){ var s = max/Math.max(w,h); w = Math.round(w*s); h = Math.round(h*s); }
+      var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      cb(cv.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = function(){ cb(null); };
+    img.src = URL.createObjectURL(file);
+  }
+
+  function setupOcr(){
+    if (MODE !== "inventory") return;
+    document.getElementById("ocrBox").style.display = "block";
+    document.getElementById("ocrBtn").addEventListener("click", function(){
+      document.getElementById("ocrFile").click();
+    });
+    document.getElementById("ocrFile").addEventListener("change", function(e){
+      var f = e.target.files && e.target.files[0]; if (!f) return;
+      ocrStatus("画像を準備中…");
+      resizeImage(f, function(dataURL){
+        if (!dataURL){ ocrStatus("画像の読み込みに失敗しました"); return; }
+        startOcr(dataURL);
+      });
+      e.target.value = "";  // 同じ写真を再選択できるように
+    });
+  }
+
+  function startOcr(dataURL){
+    var jobId = "form_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    ocrStatus("送信中…（読み取りまで最大1分ほど）");
+    // no-cors POST（応答は読まない）。job_idはこちらで発番。
+    fetch(POST_URL + "?k=" + encodeURIComponent(WEBHOOK_KEY), {
+      method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify({ action:"ocr_upload", job_id:jobId, store:store, image:dataURL })
+    }).then(function(){
+      ocrStatus("読み取り中… ⏳");
+      pollOcr(jobId, 0);
+    }).catch(function(err){
+      ocrStatus("送信失敗：" + (err && err.message ? err.message : err));
+    });
+  }
+
+  // JSONP で結果ポーリング（GitHub Pages⇄GAS の CORS 回避）
+  window.__ocrCb = function(){};
+  function pollOcr(jobId, tries){
+    if (tries > 25){ ocrStatus("時間切れ。もう一度お試しください"); return; }
+    window.__ocrCb = function(resp){
+      if (resp && resp.status === "done" && resp.result){
+        var data; try { data = JSON.parse(resp.result); } catch(e){ ocrStatus("結果の解析に失敗"); return; }
+        ocrStatus("✅ 読み取り完了（" + data.date + " " + data.staff + "）");
+        OCR_ROWS = data.rows || [];
+        renderReview(data);
+      } else if (resp && resp.status === "error"){
+        ocrStatus("読み取りエラー：" + (resp.error || "") + "\n撮り直すか、半生残シートか確認してください");
+      } else {
+        setTimeout(function(){ pollOcr(jobId, tries+1); }, 4000);
+      }
+    };
+    var s = document.createElement("script");
+    s.src = POST_URL + "?action=ocr_result&job_id=" + encodeURIComponent(jobId) +
+            "&callback=__ocrCb&_=" + Date.now();
+    s.onerror = function(){ setTimeout(function(){ pollOcr(jobId, tries+1); }, 4000); };
+    s.onload = function(){ s.remove(); };
+    document.body.appendChild(s);
+  }
+
+  function renderReview(data){
+    var el = document.getElementById("ocrReview");
+    var html = '<div class="ocr-rev"><div class="ocr-rev-h">読み取り結果（数字を直せます）合計 '+data.total+'個</div>';
+    (data.rows||[]).forEach(function(r, ri){
+      var sizes = Object.keys(r.breakdown||{});
+      html += '<div class="ocr-item"><div class="ocr-item-h"><span>'+r.product+
+              (r.matched?'':' ⚠️')+'</span><span class="ocr-dd">期限 '+r.dead_date+'</span></div>';
+      if (sizes.length){
+        sizes.sort(function(a,b){return a-b;}).forEach(function(n){
+          html += '<div class="ocr-line"><label>'+n+'個入</label>'+
+                  '<input type="number" inputmode="numeric" min="0" value="'+r.breakdown[n]+'" data-r="'+ri+'" data-n="'+n+'"><span class="ocr-sub">袋</span></div>';
+        });
+        html += '<div class="ocr-sub" style="text-align:right" id="ocrsum'+ri+'">= '+r.singles+'個</div>';
+      } else {
+        html += '<div class="ocr-line"><label>単品</label>'+
+                '<input type="number" inputmode="numeric" min="0" value="'+r.singles+'" data-r="'+ri+'" data-single="1"><span class="ocr-sub">個</span></div>';
+      }
+      html += '</div>';
+    });
+    html += '<button class="ocr-apply" id="ocrApply">この内容をフォームに反映</button></div>';
+    el.innerHTML = html;
+    // 袋数編集→小計を即更新
+    el.addEventListener("input", function(e){
+      var inp = e.target.closest("input[data-r]"); if (!inp) return;
+      var ri = parseInt(inp.dataset.r,10);
+      var sumEl = document.getElementById("ocrsum"+ri);
+      if (sumEl){
+        var s = 0;
+        el.querySelectorAll('input[data-r="'+ri+'"][data-n]').forEach(function(x){
+          s += parseInt(x.dataset.n,10) * (parseInt(x.value||"0",10)||0);
+        });
+        sumEl.textContent = "= " + s + "個";
+      }
+    });
+    document.getElementById("ocrApply").addEventListener("click", applyReview);
+  }
+
+  function applyReview(){
+    var el = document.getElementById("ocrReview");
+    var perProduct = {};   // product名 -> 単品合計（期限バッチを合算してコード送信へ）
+    (OCR_ROWS||[]).forEach(function(r, ri){
+      var single = 0;
+      var packs = el.querySelectorAll('input[data-r="'+ri+'"][data-n]');
+      if (packs.length){
+        packs.forEach(function(x){ single += parseInt(x.dataset.n,10) * (parseInt(x.value||"0",10)||0); });
+      } else {
+        var s = el.querySelector('input[data-r="'+ri+'"][data-single]');
+        single = s ? (parseInt(s.value||"0",10)||0) : 0;
+      }
+      if (single > 0) perProduct[r.product] = (perProduct[r.product]||0) + single;
+    });
+    var added = 0, unmatched = [];
+    Object.keys(perProduct).forEach(function(name){
+      var code = nameToCode(name);
+      if (code){ qty[code] = perProduct[name]; qtyStore[code] = store; added++; }
+      else { freeRows.push({id: ++freeIdSeq, name:name, qty: perProduct[name]}); unmatched.push(name); }
+    });
+    document.getElementById("ocrReview").innerHTML = "";
+    ocrStatus("フォームに反映しました（" + added + "品" +
+      (unmatched.length? " / 自由入力へ:"+unmatched.join("、") : "") + "）。確認して『送信する』を押してください");
+    renderFree(); render();
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+
   // ── データ読込 ＆ LIFF ──
   fetch("products_by_store.json?v=" + Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); })
-    .then(function(j){ DATA = j; buildChips(); render(); })
+    .then(function(j){ DATA = j; buildChips(); render(); setupOcr(); })
     .catch(function(err){ setMsg("商品データ読込失敗："+err); });
 
   var IS_PREVIEW = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname)
