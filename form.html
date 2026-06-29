@@ -424,12 +424,14 @@
     } else {
       var total = codes.reduce(function(s,c){ return s + qty[c]; }, 0);
       freeEntries().forEach(function(r){ total += r.qty; });
+      // 写真OCRで読んだ個数も合算して「送信する（◯個）」に反映
+      if (typeof ocrHasData === "function" && ocrHasData()){
+        buildOcrItems().forEach(function(it){ total += (it.singles || 0); });
+      }
       document.getElementById("cnt").textContent = total > 0 ? "（"+total+"個）" : "";
       entryCnt = total;
     }
-    // OCR読み取りパネルに値があれば（qtyが空でも）送信を有効化
-    var hasOcr = (typeof ocrHasData === "function") && ocrHasData();
-    document.getElementById("send").disabled = (entryCnt === 0 && !hasOcr);
+    document.getElementById("send").disabled = (entryCnt === 0);
   }
   function buildText(){
     var parts = currentEntries();
@@ -587,6 +589,7 @@
         });
         sumEl.textContent = "= " + s + "個";
       }
+      updateCnt();   // 編集に合わせて「送信する（◯個）」も更新
     });
   }
 
