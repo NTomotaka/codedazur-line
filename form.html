@@ -427,7 +427,9 @@
       document.getElementById("cnt").textContent = total > 0 ? "（"+total+"個）" : "";
       entryCnt = total;
     }
-    document.getElementById("send").disabled = (entryCnt === 0);
+    // OCR読み取りパネルに値があれば（qtyが空でも）送信を有効化
+    var hasOcr = (typeof ocrHasData === "function") && ocrHasData();
+    document.getElementById("send").disabled = (entryCnt === 0 && !hasOcr);
   }
   function buildText(){
     var parts = currentEntries();
@@ -441,6 +443,8 @@
   function setMsg(t){ document.getElementById("msg").textContent = t; }
   sendBtn.addEventListener("click", function(){
     if (!USER_ID){ setMsg("ユーザー情報を取得中。数秒後に再度お試しください"); return; }
+    // 閉店残で写真OCRの読み取りがある時は、賞味期限つきの一括記録へ（タップ入力も相乗り）
+    if (MODE === "inventory" && ocrHasData()){ sendInventoryBatch(); return; }
     var entries = currentEntries();
     if (entries.length === 0){ setMsg("数量を入れてください"); return; }
     sendBtn.disabled = true; setMsg("送信中…");
@@ -567,8 +571,10 @@
       }
       html += '</div>';
     });
-    html += '<button class="ocr-apply" id="ocrApply">この内容で記録する（賞味期限ごと）</button></div>';
+    html += '<div class="ocr-sub" style="text-align:center;margin-top:10px;font-size:13px">'+
+            '✏️ 数字はここで直せます。手入力で足すこともできます。<br>確認できたら下の<b>「送信する」</b>で記録します。</div></div>';
     el.innerHTML = html;
+    updateCnt();   // OCR取込で下の送信ボタンを有効化
     // 袋数編集→小計を即更新
     el.addEventListener("input", function(e){
       var inp = e.target.closest("input[data-r]"); if (!inp) return;
@@ -582,14 +588,15 @@
         sumEl.textContent = "= " + s + "個";
       }
     });
-    document.getElementById("ocrApply").addEventListener("click", applyReview);
   }
 
-  function applyReview(){
-    if (!USER_ID){ ocrStatus("ユーザー情報を取得中。数秒後に再度お試しください"); return; }
+  // OCR読み取りパネルに編集中の値があるか（送信ボタン有効化の判定に使う）
+  function ocrHasData(){ return document.querySelectorAll('#ocrReview input[data-r]').length > 0; }
+
+  // OCRパネルの編集後の値を、賞味期限つきの items[] に組み立てる
+  function buildOcrItems(){
     var el = document.getElementById("ocrReview");
-    // 編集後の値を期限バッチ別に組み立て（賞味期限・サイズ内訳を保持して送る）
-    var items = [], total = 0;
+    var items = [];
     (OCR_ROWS||[]).forEach(function(r, ri){
       var single = 0, breakdown = null;
       var packs = el.querySelectorAll('input[data-r="'+ri+'"][data-n]');
@@ -603,26 +610,35 @@
         var s = el.querySelector('input[data-r="'+ri+'"][data-single]');
         single = s ? (parseInt(s.value||"0",10)||0) : 0;
       }
-      if (single > 0){
-        items.push({ product: r.product, dead_date: r.dead_date, singles: single, breakdown: breakdown });
-        total += single;
+      if (single > 0) items.push({ product:r.product, dead_date:r.dead_date, singles:single, breakdown:breakdown });
+    });
+    return items;
+  }
+
+  // 閉店残（OCR）＝賞味期限つきで1回の「送信する」で記録。タップ/自由入力も相乗りさせる。
+  function sendInventoryBatch(){
+    var items = buildOcrItems();
+    // タップ入力分（賞味期限なしで相乗り）
+    Object.keys(qty).forEach(function(c){
+      if (nz(c) && qtyStore[c] === store){
+        var nm = (DATA.products[c] || [])[0] || ("商品#"+c);
+        items.push({ product:nm, dead_date:null, singles:qty[c], breakdown:null });
       }
     });
-    if (items.length === 0){ ocrStatus("数量が0です。1つ以上入れてください"); return; }
-    var btn = document.getElementById("ocrApply");
-    if (btn) btn.disabled = true;
-    ocrStatus("記録中…");
+    freeEntries().forEach(function(r){ items.push({ product:r.name, dead_date:null, singles:r.qty, breakdown:null }); });
+    if (items.length === 0){ setMsg("数量を入れてください"); return; }
+    var total = items.reduce(function(s,it){ return s + (it.singles||0); }, 0);
+    sendBtn.disabled = true; setMsg("記録中…");
     fetch(POST_URL + "?k=" + encodeURIComponent(WEBHOOK_KEY), {
       method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body: JSON.stringify({ action:"inv_batch", userId:USER_ID,
         payload:{ store:store, date:OCR_DATE, items:items } })
     }).then(function(){
-      document.getElementById("ocrReview").innerHTML = "";
-      ocrStatus("✅ "+store+" "+items.length+"品・計"+total+"個を記録しました（賞味期限つき）");
-      setTimeout(function(){ if (!IS_PREVIEW && liff.isInClient()) liff.closeWindow(); }, 1600);
+      setMsg("✅ "+store+" "+items.length+"品・計"+total+"個を記録しました（賞味期限つき）\n完了です。画面を閉じてOKです");
+      document.getElementById("ocrReview").innerHTML = ""; ocrStatus("");
+      qty = {}; qtyStore = {}; packQty = {}; freeRows = []; renderFree(); render();
     }).catch(function(err){
-      ocrStatus("記録失敗："+(err && err.message ? err.message : err));
-      if (btn) btn.disabled = false;
+      setMsg("記録失敗："+(err && err.message ? err.message : err)); sendBtn.disabled = false;
     });
   }
 
