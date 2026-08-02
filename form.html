@@ -69,6 +69,8 @@
   .empty-note { text-align:center; color:#b3a; font-size:13px; padding:24px 0; }
   .empty-add { display:block; width:100%; margin-top:10px; height:44px; border:none; border-radius:12px;
                background:var(--pink); color:#fff; font-size:14px; font-weight:700; }
+  .prior-fill { flex:0 0 auto; height:32px; padding:0 10px; margin-right:6px; border:1px solid var(--caramel);
+                border-radius:8px; background:#fffdf8; color:var(--caramel); font-size:12px; font-weight:700; }
   .submit { position:fixed; left:0; right:0; bottom:0; padding:10px 12px; background:var(--cream); border-top:1px solid var(--line); }
   .submit button { width:100%; height:52px; border:none; border-radius:14px; font-size:17px; font-weight:700; background:var(--pink); color:#fff; }
   .submit button:disabled { background:#ddd; }
@@ -165,11 +167,13 @@
 
   var store = STORE_OPTS[0][0];
   var DATA = null;       // products_by_store.json
+  var PRIOR = null;      // prior_inventory.json（前日と同じワンタップ用・閉店残モードのみ使用）
   var qty = {};          // code -> quantity（単品換算の合計。店舗をまたいでも保持・送信は現在店舗分のみ）
   var qtyStore = {};     // code -> 入力された店舗（誤混在防止）
   var packQty = {};      // code -> {個入りサイズ: 袋数}（閉店残のパック入力。qtyへ単品換算）
   var activeCat = "nama_cake"; // カテゴリchip（初期=生ケーキ＝日次入力で最頻。全件一括描画を避ける）
-  var kw = "";           // 検索語
+  var kw = "";           // 検索語（小文字化・絞込用）
+  var kwRaw = "";        // 検索語（元の大文字小文字のまま・新規追加のプリフィル用）
 
   // ── 店舗タブ ──
   var storesEl = document.getElementById("stores");
@@ -202,19 +206,37 @@
 
   // ── 検索 ──
   document.getElementById("search").addEventListener("input", function(e){
-    kw = (e.target.value||"").trim().toLowerCase(); render();
+    kwRaw = (e.target.value||"").trim();
+    kw = kwRaw.toLowerCase(); render();
   });
 
   function norm(s){ return (s||"").toLowerCase(); }
 
+  // よく使う商品（端末内のみ・送信実績から集計）。APIは使わずlocalStorageだけで完結。
+  var USAGE_KEY = "cdz_usage_v1";
+  function loadUsage(){
+    try { return JSON.parse(localStorage.getItem(USAGE_KEY) || "{}"); } catch(e){ return {}; }
+  }
+  function recordUsage(codes){
+    if (!codes || !codes.length) return;
+    var u = loadUsage();
+    if (!u[store]) u[store] = {};
+    codes.forEach(function(code){ if (!code) return; u[store][code] = (u[store][code]||0) + 1; });
+    try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch(e){}
+  }
+  function topUsedCodes(limit){
+    var u = loadUsage()[store] || {};
+    return Object.keys(u).sort(function(a,b){ return u[b]-u[a]; }).slice(0, limit || 20);
+  }
+
   function buildChips(){
     var el = document.getElementById("chips"); el.innerHTML = "";
-    var order = ["all"].concat(DATA.cat_order);
+    var order = ["freq", "all"].concat(DATA.cat_order);
     order.forEach(function(c){
       var b = document.createElement("button");
       b.className = "chip" + (c===activeCat?" on":"");
       b.dataset.cat = c;
-      b.textContent = (c==="all") ? "すべて" : DATA.cats[c];
+      b.textContent = (c==="freq") ? "★よく使う" : (c==="all") ? "すべて" : DATA.cats[c];
       el.appendChild(b);
     });
     el.addEventListener("click", function(e){
@@ -227,8 +249,20 @@
 
   // 現在店舗の対象コード一覧（カテゴリ・検索で絞込、部門ごとにまとめる）
   function visibleByDept(){
-    var codes = DATA.stores[store] || [];
     var groups = {}; var order = [];
+    if (activeCat === "freq"){
+      var storeCodes = {}; (DATA.stores[store] || []).forEach(function(c){ storeCodes[c] = true; });
+      var used = topUsedCodes(30).filter(function(c){ return storeCodes[c]; });
+      used.forEach(function(code){
+        var p = DATA.products[String(code)]; if (!p) return;
+        var name = p[0];
+        if (kw && norm(name).indexOf(kw) === -1) return;
+        if (!groups["★よく使う"]) { groups["★よく使う"] = []; order.push("★よく使う"); }
+        groups["★よく使う"].push({ code:code, name:name, cat:p[1] });
+      });
+      return { groups:groups, order:order };
+    }
+    var codes = DATA.stores[store] || [];
     codes.forEach(function(code){
       var p = DATA.products[String(code)]; if(!p) return;
       var name = p[0], cat = p[1], dept = p[2];
@@ -240,11 +274,22 @@
     return { groups:groups, order:order };
   }
 
-  function stepperHTML(code){
+  // 前日と同じ数量が分かっていれば、タップ1回で埋められるボタンを出す（閉店残モードのみ）。
+  // 数え直す手間を減らすためのヒント＝自動入力ではなく必ず本人のタップが要る（サイレント代入はしない）。
+  function priorFillHTML(name, curQty, code, fid){
+    if (MODE !== "inventory" || !PRIOR || !PRIOR[store]) return "";
+    var v = PRIOR[store][name];
+    if (!v || (curQty||0) > 0) return "";
+    var attr = code ? ('data-code="'+code+'"') : ('data-fid="'+fid+'"');
+    return '<button class="prior-fill" '+attr+' data-v="'+v+'">前日'+v+'</button>';
+  }
+
+  function stepperHTML(code, name){
     var v = qty[code] || 0;
     var minAttr = IS_ADJ ? '' : 'min="0" ';
     // 0は空欄表示にしてタップ即入力できるようにする（現場フィードバック）。プレースホルダで0を示す。
-    return '<div class="stepper">'+
+    return priorFillHTML(name, v, code) +
+      '<div class="stepper">'+
       '<button data-d="-1" data-code="'+code+'">−</button>'+
       '<input type="number" inputmode="numeric" '+minAttr+'value="'+(v||"")+'" placeholder="0" data-code="'+code+'">'+
       '<button data-d="1" data-code="'+code+'">＋</button></div>';
@@ -281,7 +326,7 @@
     var listEl = document.getElementById("list"); listEl.innerHTML = "";
     var vis = visibleByDept();
     if (vis.order.length === 0){
-      var kwEsc = (kw||"").replace(/"/g,'&quot;');
+      var kwEsc = (kwRaw||"").replace(/"/g,'&quot;');
       listEl.innerHTML = '<div class="empty-note">該当する商品がありません' +
         (kw ? ('<button class="empty-add" id="emptyAdd" data-name="'+kwEsc+'">＋「'+kwEsc+'」を新しい商品として追加</button>') : '') +
         '</div>';
@@ -298,7 +343,7 @@
         } else {
           html += '<div class="row'+(has?' has':'')+'" data-code="'+it.code+'">'+
                     '<div class="nm">'+it.name+'<small>'+DATA.cats[it.cat]+'</small></div>'+
-                    stepperHTML(it.code)+'</div>';
+                    stepperHTML(it.code, it.name)+'</div>';
         }
       });
     });
@@ -315,7 +360,7 @@
     codes.forEach(function(code){
       var p = DATA.products[String(code)];
       html += '<div class="row has" data-code="'+code+'">'+
-                '<div class="nm">'+p[0]+'</div>'+ stepperHTML(code)+'</div>';
+                '<div class="nm">'+p[0]+'</div>'+ stepperHTML(code, p[0])+'</div>';
     });
     tl.innerHTML = html;
   }
@@ -372,6 +417,7 @@
     var q = qty || 0;
     return '<div class="free-row" data-fid="'+id+'">'+
       '<input class="free-name" type="text" list="prodNames" placeholder="商品名を入力（似た商品があれば候補から選択）" value="'+name.replace(/"/g,'&quot;')+'" data-fid="'+id+'">'+
+      priorFillHTML(name, q, null, id) +
       '<div class="stepper">'+
         '<button data-d="-1" data-fid="'+id+'">−</button>'+
         '<input type="number" inputmode="numeric" '+(IS_ADJ?'':'min="0" ')+'value="'+(q||"")+'" placeholder="0" data-fid="'+id+'">'+
@@ -405,7 +451,9 @@
   // 検索して0件だった時の「新しい商品として追加」導線（#listは中身だけ差し替わるので委譲で拾う）
   document.getElementById("list").addEventListener("click", function(e){
     var b = e.target.closest("#emptyAdd");
-    if (b) addFreeRowWithName(b.dataset.name || "");
+    if (b){ addFreeRowWithName(b.dataset.name || ""); return; }
+    var pf = e.target.closest(".prior-fill[data-code]");
+    if (pf){ setQty(pf.dataset.code, parseInt(pf.dataset.v, 10)); render(); }
   });
 
   document.getElementById("freeList").addEventListener("input", function(e){
@@ -433,6 +481,12 @@
     if (del){
       var fid2 = parseInt(del.dataset.fidDel);
       freeRows = freeRows.filter(function(r){ return r.id !== fid2; });
+      renderFree(); return;
+    }
+    var pf = e.target.closest(".prior-fill[data-fid]");
+    if (pf){
+      var fid3 = parseInt(pf.dataset.fid), row3 = freeFind(fid3); if (!row3) return;
+      row3.qty = parseInt(pf.dataset.v, 10) || 0;
       renderFree();
     }
   });
@@ -487,6 +541,7 @@
       headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body: JSON.stringify({ source:"form", userId:USER_ID, text:text })
     }).then(function(){
+      recordUsage(entries.map(function(e){ return e.split(":")[0]; }));
       if (IS_ADJ){
         setMsg("✅ "+store+"（"+ADJ_DATE+"）の調整 "+(entries.length+freeEntries().length)+"品を送信しました\n結果はLINEに届きます");
       } else {
@@ -680,6 +735,13 @@
   fetch("products_by_store.json?v=" + Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); })
     .then(function(j){ DATA = j; buildChips(); render(); setupOcr(); populateDatalist(); })
     .catch(function(err){ setMsg("商品データ読込失敗："+err); });
+
+  // 前日と同じワンタップ用データ（閉店残モードのみ使用。失敗しても致命的ではないので握り潰す）
+  if (MODE === "inventory"){
+    fetch("prior_inventory.json?v=" + Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); })
+      .then(function(j){ PRIOR = j.items || {}; render(); })
+      .catch(function(){ /* 前日データが無くても入力自体は継続できる */ });
+  }
 
   var IS_PREVIEW = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname)
                    || new URLSearchParams(location.search).get("preview") === "1";
