@@ -67,6 +67,8 @@
   .pk-sum { text-align:right; font-size:12px; color:var(--choco); border-top:1px dashed var(--line); padding-top:5px; margin-top:2px; }
   .pk-sum b { font-size:15px; color:var(--pink); }
   .empty-note { text-align:center; color:#b3a; font-size:13px; padding:24px 0; }
+  .empty-add { display:block; width:100%; margin-top:10px; height:44px; border:none; border-radius:12px;
+               background:var(--pink); color:#fff; font-size:14px; font-weight:700; }
   .submit { position:fixed; left:0; right:0; bottom:0; padding:10px 12px; background:var(--cream); border-top:1px solid var(--line); }
   .submit button { width:100%; height:52px; border:none; border-radius:14px; font-size:17px; font-weight:700; background:var(--pink); color:#fff; }
   .submit button:disabled { background:#ddd; }
@@ -97,7 +99,7 @@
     <div id="ocrReview"></div>
   </div>
 
-  <input class="search" id="search" type="search" placeholder="商品名で検索 ／ リストにない商品の入力もこちらから" autocomplete="off">
+  <input class="search" id="search" type="search" placeholder="商品名で検索" autocomplete="off">
   <div class="chips" id="chips"></div>
 
   <div class="tray empty" id="tray">
@@ -108,10 +110,11 @@
   <div id="list"></div>
 
   <!-- 自由入力 -->
-  <div class="free-section">
-    <div class="free-h">リストにない商品</div>
+  <div class="free-section" id="freeSection">
+    <div class="free-h">🔍 探しても見つからない商品はここに手入力</div>
     <div id="freeList"></div>
-    <button class="free-add" id="freeAdd">＋ 追加</button>
+    <button class="free-add" id="freeAdd">＋ リストにない商品を追加</button>
+    <datalist id="prodNames"></datalist>
   </div>
 
   <div class="submit">
@@ -181,7 +184,21 @@
     store = b.dataset.store;
     [].forEach.call(storesEl.children, function(x){ x.classList.toggle("on", x===b); });
     render();
+    populateDatalist();
   });
+
+  // 自由入力欄のサジェスト：似た商品名が既にリストにあれば選ばせて重複・表記ゆれの新規登録を防ぐ
+  function populateDatalist(){
+    var dl = document.getElementById("prodNames"); if (!dl || !DATA) return;
+    var codes = DATA.stores[store] || [];
+    var seen = {}; var opts = "";
+    codes.forEach(function(code){
+      var p = DATA.products[String(code)]; if (!p) return;
+      var name = p[0]; if (seen[name]) return; seen[name] = true;
+      opts += '<option value="'+name.replace(/"/g,'&quot;')+'">';
+    });
+    dl.innerHTML = opts;
+  }
 
   // ── 検索 ──
   document.getElementById("search").addEventListener("input", function(e){
@@ -264,7 +281,10 @@
     var listEl = document.getElementById("list"); listEl.innerHTML = "";
     var vis = visibleByDept();
     if (vis.order.length === 0){
-      listEl.innerHTML = '<div class="empty-note">該当する商品がありません</div>';
+      var kwEsc = (kw||"").replace(/"/g,'&quot;');
+      listEl.innerHTML = '<div class="empty-note">該当する商品がありません' +
+        (kw ? ('<button class="empty-add" id="emptyAdd" data-name="'+kwEsc+'">＋「'+kwEsc+'」を新しい商品として追加</button>') : '') +
+        '</div>';
       updateCnt(); return;
     }
     var html = "";
@@ -351,7 +371,7 @@
   function freeRowHTML(id, name, qty){
     var q = qty || 0;
     return '<div class="free-row" data-fid="'+id+'">'+
-      '<input class="free-name" type="text" placeholder="商品名を入力" value="'+name.replace(/"/g,'&quot;')+'" data-fid="'+id+'">'+
+      '<input class="free-name" type="text" list="prodNames" placeholder="商品名を入力（似た商品があれば候補から選択）" value="'+name.replace(/"/g,'&quot;')+'" data-fid="'+id+'">'+
       '<div class="stepper">'+
         '<button data-d="-1" data-fid="'+id+'">−</button>'+
         '<input type="number" inputmode="numeric" '+(IS_ADJ?'':'min="0" ')+'value="'+(q||"")+'" placeholder="0" data-fid="'+id+'">'+
@@ -369,12 +389,23 @@
 
   function freeFind(id){ return freeRows.find(function(r){ return r.id === id; }); }
 
-  document.getElementById("freeAdd").addEventListener("click", function(){
-    freeRows.push({id: ++freeIdSeq, name: "", qty: 0});
+  function addFreeRowWithName(name){
+    freeRows.push({id: ++freeIdSeq, name: name || "", qty: 0});
     renderFree();
-    // 追加した行の入力欄にフォーカス
+    var sec = document.getElementById("freeSection");
+    if (sec) sec.scrollIntoView({behavior: "smooth", block: "start"});
     var inputs = document.querySelectorAll(".free-name");
     if (inputs.length) inputs[inputs.length-1].focus();
+  }
+
+  document.getElementById("freeAdd").addEventListener("click", function(){
+    addFreeRowWithName("");
+  });
+
+  // 検索して0件だった時の「新しい商品として追加」導線（#listは中身だけ差し替わるので委譲で拾う）
+  document.getElementById("list").addEventListener("click", function(e){
+    var b = e.target.closest("#emptyAdd");
+    if (b) addFreeRowWithName(b.dataset.name || "");
   });
 
   document.getElementById("freeList").addEventListener("input", function(e){
@@ -647,7 +678,7 @@
 
   // ── データ読込 ＆ LIFF ──
   fetch("products_by_store.json?v=" + Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); })
-    .then(function(j){ DATA = j; buildChips(); render(); setupOcr(); })
+    .then(function(j){ DATA = j; buildChips(); render(); setupOcr(); populateDatalist(); })
     .catch(function(err){ setMsg("商品データ読込失敗："+err); });
 
   var IS_PREVIEW = /^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/.test(location.hostname)
