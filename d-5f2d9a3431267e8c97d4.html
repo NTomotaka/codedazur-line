@@ -41,10 +41,10 @@
  .ipanel h2{font-size:15px;margin:0 0 8px;color:#5B331E}
 </style></head><body>
  <h1>🍰 コートダジュール ダッシュボード</h1>
- <div class="ts">最終更新: 2026-08-04 03:47 JST ／ 管理者専用</div>
+ <div class="ts">最終更新: 2026-08-04 06:54 JST ／ 管理者専用</div>
  <a class="detail-link" href="https://cdz-dashboard.wellcon.biz" target="_blank">📊 詳細ダッシュボードを開く →</a>
  <div class="kpis">
-   <div class="kpi"><div class="v">206万円</div><div class="l">本日予測売上</div></div>
+   <div class="kpi"><div class="v">251万円</div><div class="l">本日予測売上</div></div>
    <div class="kpi"><div class="v">約72,901円</div><div class="l">廃棄/店舗日</div></div>
    <div class="kpi"><div class="v">29%</div><div class="l">記録達成率</div></div>
  </div>
@@ -58,36 +58,37 @@
    <p class="note warn">⏳ 昨日未記録: 本店 / メゾン</p>
  </section>
  <details><summary>📋 今日の生産・配送プラン（詳細）</summary><pre>☀️ おはようございます！
-📅 2026-08-04（火） / 天気: 曇 (20-28℃)
+📅 2026-08-04（火） / 天気: 雨 (20-28℃)
 
-📊 予測売上（3店舗合計 206万円）
-  本店     83.5万円 ━━━━━━━━
-  つくばイオン 48.3万円 ━━━━
-  メゾン    74.5万円 ━━━━━━━
+📊 予測売上（3店舗合計 251万円）
+  本店      105万円 ━━━━━━━━━━
+  つくばイオン 59.5万円 ━━━━━
+  メゾン    85.7万円 ━━━━━━━━
 
 🍰 必要生産数（カテゴリ別） 📥 繰越=昨夜の入力残在庫（入力のあった店のみ）
-  本店: 生497 / 半生181 / 焼392 / 冷25
-  つくばイオン: 生283（繰越57+新規226） / 半生98（繰越504+新規0） / 焼194 / 冷7
-  メゾン: 生448 / 半生156 / 焼334 / 冷22
+  本店: 生627 / 半生229 / 焼494 / 冷32
+  つくばイオン: 生350（繰越57+新規293） / 半生122（繰越504+新規0） / 焼239 / 冷8
+  メゾン: 生515 / 半生179 / 焼385 / 冷25
 
 🏭 工場別の製造割当（新規製造分・イオン分含む）
-  本店工場: 生610 / 半生181 / 焼489 / 冷29
-  メゾン工場: 生561 / 半生156 / 焼431 / 冷25
+  本店工場: 生774 / 半生229 / 焼614 / 冷36
+  メゾン工場: 生661 / 半生179 / 焼504 / 冷29
   ※イオン分は本店・メゾン工場で半分ずつ
 
 🚚 配送計画（イオンへ 1便構成）
   【平日朝便】
-    09:30 本店→つくばイオン 生113 / 焼97 / 冷4
-    09:30 メゾン→つくばイオン 生113 / 焼97 / 冷3
+    09:30 本店→つくばイオン 生147 / 焼120 / 冷4
+    09:30 メゾン→つくばイオン 生146 / 焼119 / 冷4
 
 ⚠️ 注意
   ・生クリームデコ: 最低5個キープ
+  ・雨予報: 本店・つくばイオンは小幅減 / メゾンは大きく減る傾向
   ・15時に再判断（ショーケース充足率チェック）
 
 🗑 昨日の閉店残が未記録: 本店 ・ メゾン
   → 紙メモを撮って『記録コマンド』を送るだけで反映されます</pre></details>
 <script>
- var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [83.5, 48.3, 74.5]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [610, 561]}, {"label": "半生", "color": "#E18600", "data": [181, 156]}, {"label": "焼", "color": "#866134", "data": [489, 431]}, {"label": "冷", "color": "#42B6EE", "data": [29, 25]}]}, "cov": {"recorded": 6, "possible": 21, "rate": 29}};
+ var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [105.4, 59.5, 85.7]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [774, 661]}, {"label": "半生", "color": "#E18600", "data": [229, 179]}, {"label": "焼", "color": "#866134", "data": [614, 504]}, {"label": "冷", "color": "#42B6EE", "data": [36, 29]}]}, "cov": {"recorded": 6, "possible": 21, "rate": 29}};
  var co = {plugins:{legend:{labels:{font:{size:11}}}},maintainAspectRatio:false,scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}};
  new Chart(document.getElementById('pred'),{type:'bar',data:{labels:D.pred.labels,datasets:[{label:'予測(万円)',data:D.pred.values,backgroundColor:'#F69D9D'}]},options:co});
  new Chart(document.getElementById('factory'),{type:'bar',data:{labels:D.factory.stores,datasets:D.factory.cats.map(function(c){return {label:c.label,data:c.data,backgroundColor:c.color};})},options:{plugins:{legend:{labels:{font:{size:11}}}},maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true}}}});
