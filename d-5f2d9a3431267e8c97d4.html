@@ -16,15 +16,23 @@
  pre{white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.5;margin:8px 0 0}
  canvas{max-height:240px}
  .detail-link{display:block;background:#5B331E;color:#fff;text-align:center;padding:12px;border-radius:14px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:14px}
+ .asof{font-size:11px;color:#866134;margin-bottom:8px}
+ .crow{display:flex;justify-content:space-between;align-items:center;padding:7px 4px;
+        border-top:1px solid #f3ece1;font-size:14px}
+ .crow:first-of-type{border-top:none}
+ .cn{color:#866134} .cv{font-weight:700}
+ .crow.zero .cv{color:#e0524a} .crow.low .cv{color:#E18600} .crow.ok .cv{color:#5B331E}
 </style></head><body>
  <h1>🍰 コートダジュール ダッシュボード</h1>
- <div class="ts">最終更新: 2026-08-03 16:45 JST ／ 管理者専用</div>
+ <div class="ts">最終更新: 2026-08-03 17:11 JST ／ 管理者専用</div>
  <a class="detail-link" href="https://cdz-dashboard.wellcon.biz" target="_blank">📊 詳細ダッシュボードを開く →</a>
  <div class="kpis">
    <div class="kpi"><div class="v">277万円</div><div class="l">本日予測売上</div></div>
    <div class="kpi"><div class="v">約72,783円</div><div class="l">廃棄/店舗日</div></div>
    <div class="kpi"><div class="v">29%</div><div class="l">記録達成率</div></div>
  </div>
+ <h2 style="margin:0 0 8px;font-size:14px;color:#866134">📦 店舗別 在庫（カテゴリ別・直近の閉店残）</h2>
+ <section><h2>本店</h2><div class="asof">記録日: 2026-07-24</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><div class="crow ok"><span class="cn">半生</span><span class="cv">1337個</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section><h2>つくばイオン</h2><div class="asof">記録日: 2026-08-02</div><div class="crow ok"><span class="cn">生</span><span class="cv">98個</span></div><div class="crow zero"><span class="cn">半生</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section><h2>メゾン</h2><div class="asof">記録日: 2026-08-01</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><div class="crow ok"><span class="cn">半生</span><span class="cv">1110個</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section>
  <section><h2>📊 店舗別 予測売上（万円）</h2><canvas id="pred"></canvas></section>
  <section><h2>🏭 工場別 製造割当（カテゴリ別）</h2><canvas id="factory"></canvas></section>
  <section><h2>🗑 廃棄ロス / 📥 入力</h2>
