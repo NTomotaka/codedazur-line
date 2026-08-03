@@ -390,9 +390,13 @@
   function nz(code){ var v = qty[code]||0; return IS_ADJ ? v !== 0 : v > 0; }
   function signed(v){ return (IS_ADJ && v > 0) ? ("+"+v) : String(v); }
 
-  // 増減・直接入力（list と tray 共通）
+  // 増減・直接入力（list と tray 共通）。自由入力行のステッパーも同じ.stepperクラスを持つため
+  // ここまでイベントが委譲で上がってくるが、data-codeを持たない（=自由入力行）場合はfreeList側の
+  // 専用ハンドラが処理するのでここでは何もしない。そうしないとqty["undefined"]という幽霊エントリが
+  // 生成され、商品名不明の「商品#undefined」として在庫に記録されてしまう（2026-08-04発見・修正）。
   document.body.addEventListener("click", function(e){
     var b = e.target.closest(".stepper button"); if(!b) return;
+    if (b.dataset.code === undefined && b.dataset.pd === undefined) return;
     // パック入力（閉店残）の袋数ステッパー
     if (b.dataset.pd !== undefined){
       var pc = b.dataset.code, pn = b.dataset.n;
@@ -405,6 +409,7 @@
   });
   document.body.addEventListener("change", function(e){
     var inp = e.target.closest(".stepper input"); if(!inp) return;
+    if (inp.dataset.code === undefined && inp.dataset.n === undefined) return;  // 自由入力行はfreeList側で処理
     if (inp.dataset.n !== undefined){   // パック入力の袋数直接入力
       setPackQty(inp.dataset.code, inp.dataset.n, parseInt(inp.value||"0",10));
       render(); return;
@@ -711,11 +716,11 @@
   // 閉店残（OCR）＝賞味期限つきで1回の「送信する」で記録。タップ/自由入力も相乗りさせる。
   function sendInventoryBatch(){
     var items = buildOcrItems();
-    // タップ入力分（賞味期限なしで相乗り）
+    // タップ入力分（賞味期限なしで相乗り）。DATA.productsに無いコード（"undefined"等の
+    // 幽霊キー混入を含む）は実在しない商品として記録しないよう、ここでも除外する（保険）。
     Object.keys(qty).forEach(function(c){
-      if (nz(c) && qtyStore[c] === store){
-        var nm = (DATA.products[c] || [])[0] || ("商品#"+c);
-        items.push({ product:nm, dead_date:null, singles:qty[c], breakdown:null });
+      if (nz(c) && qtyStore[c] === store && DATA.products[c]){
+        items.push({ product: DATA.products[c][0], dead_date:null, singles:qty[c], breakdown:null });
       }
     });
     freeEntries().forEach(function(r){ items.push({ product:r.name, dead_date:null, singles:r.qty, breakdown:null }); });
