@@ -207,10 +207,14 @@
   // ── 検索 ──
   document.getElementById("search").addEventListener("input", function(e){
     kwRaw = (e.target.value||"").trim();
-    kw = kwRaw.toLowerCase(); render();
+    kw = norm(kwRaw); render();
   });
 
-  function norm(s){ return (s||"").toLowerCase(); }
+  // ひらがな/カタカナの表記ゆれ（例:「ちーず」/「チーズ」）を無視して検索できるよう、カタカナに統一してから比較する
+  function toKatakana(s){
+    return (s||"").replace(/[ぁ-ゖ]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) + 0x60); });
+  }
+  function norm(s){ return toKatakana(s).toLowerCase(); }
 
   // よく使う商品（端末内のみ・送信実績から集計）。APIは使わずlocalStorageだけで完結。
   var USAGE_KEY = "cdz_usage_v1";
