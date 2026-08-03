@@ -17,22 +17,39 @@
  canvas{max-height:240px}
  .detail-link{display:block;background:#5B331E;color:#fff;text-align:center;padding:12px;border-radius:14px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:14px}
  .asof{font-size:11px;color:#866134;margin-bottom:8px}
- .crow{display:flex;justify-content:space-between;align-items:center;padding:7px 4px;
-        border-top:1px solid #f3ece1;font-size:14px}
- .crow:first-of-type{border-top:none}
+ .crow{padding:7px 4px;font-size:14px}
+ div.crow{display:flex;justify-content:space-between;align-items:center}
+ .crow ~ .crow{border-top:1px solid #f3ece1}
  .cn{color:#866134} .cv{font-weight:700}
  .crow.zero .cv{color:#e0524a} .crow.low .cv{color:#E18600} .crow.ok .cv{color:#5B331E}
+ details.crow{background:none;border:none;padding:7px 4px;border-radius:0}
+ details.crow summary{display:flex;justify-content:space-between;align-items:center;
+   cursor:pointer;list-style:none;font-size:14px;font-weight:400;color:inherit}
+ details.crow summary::-webkit-details-marker{display:none}
+ details.crow summary::after{content:"▾";color:#c9b8a0;font-size:11px;margin-left:6px}
+ details.crow[open] summary::after{content:"▴"}
+ .ilist{margin:2px 0 6px;padding:0 2px 0 8px;list-style:none}
+ .ilist li{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;
+   color:#5B331E;border-top:1px dashed #f3ece1}
+ .ilist li:first-child{border-top:none}
+ .ilist li.more{color:#a89;font-size:12px}
+ .qn{font-weight:600}
+ .store-tabs{display:flex;gap:6px;margin-bottom:10px}
+ .stab{flex:1;height:36px;border:1px solid #eee3d6;border-radius:10px;background:#fff;
+   color:#866134;font-size:13px;font-weight:600}
+ .stab.on{background:#5B331E;color:#fff;border-color:#5B331E}
+ .ipanel h2{font-size:15px;margin:0 0 8px;color:#5B331E}
 </style></head><body>
  <h1>🍰 コートダジュール ダッシュボード</h1>
- <div class="ts">最終更新: 2026-08-03 17:15 JST ／ 管理者専用</div>
+ <div class="ts">最終更新: 2026-08-03 17:46 JST ／ 管理者専用</div>
  <a class="detail-link" href="https://cdz-dashboard.wellcon.biz" target="_blank">📊 詳細ダッシュボードを開く →</a>
  <div class="kpis">
    <div class="kpi"><div class="v">277万円</div><div class="l">本日予測売上</div></div>
    <div class="kpi"><div class="v">約72,783円</div><div class="l">廃棄/店舗日</div></div>
    <div class="kpi"><div class="v">29%</div><div class="l">記録達成率</div></div>
  </div>
- <h2 style="margin:0 0 8px;font-size:14px;color:#866134">📦 店舗別 在庫（カテゴリ別・直近の閉店残）</h2>
- <section><h2>本店</h2><div class="asof">記録日: 2026-07-24</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><div class="crow ok"><span class="cn">半生</span><span class="cv">1337個</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section><h2>つくばイオン</h2><div class="asof">記録日: 2026-08-02</div><div class="crow ok"><span class="cn">生</span><span class="cv">98個</span></div><div class="crow zero"><span class="cn">半生</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section><h2>メゾン</h2><div class="asof">記録日: 2026-08-01</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><div class="crow ok"><span class="cn">半生</span><span class="cv">1110個</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section>
+ <h2 style="margin:0 0 8px;font-size:14px;color:#866134">📦 店舗別 在庫（タップで商品明細）</h2>
+ <div class="store-tabs"><button class="stab on" data-t="本店">本店</button><button class="stab" data-t="つくばイオン">イオン</button><button class="stab" data-t="メゾン">メゾン</button></div><section class="ipanel" data-p="本店"><h2>本店</h2><div class="asof">記録日: 2026-07-24</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><details class="crow ok"><summary><span class="cn">半生</span><span class="cv">1337個</span></summary><ul class="ilist"><li><span class="cn">はんじゅくちーず単品</span><span class="qn">1095個</span></li><li><span class="cn">半熟ぷりん</span><span class="qn">217個</span></li><li><span class="cn">わが家のロール</span><span class="qn">20個</span></li><li><span class="cn">半熟スフレロール</span><span class="qn">5個</span></li></ul></details><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section class="ipanel" data-p="つくばイオン" style="display:none"><h2>つくばイオン</h2><div class="asof">記録日: 2026-08-02</div><details class="crow ok"><summary><span class="cn">生</span><span class="cv">98個</span></summary><ul class="ilist"><li><span class="cn">ショコラキューブ</span><span class="qn">12個</span></li><li><span class="cn">フレーズフレーズ</span><span class="qn">12個</span></li><li><span class="cn">シャモニー</span><span class="qn">11個</span></li><li><span class="cn">ジュエル エ ノワール</span><span class="qn">11個</span></li><li><span class="cn">ノワール・ラムレザン</span><span class="qn">10個</span></li><li><span class="cn">セゾンドフロマージュ（苺）</span><span class="qn">8個</span></li><li><span class="cn">完熟マンゴープリン</span><span class="qn">8個</span></li><li><span class="cn">Aシャンテオフレーズ　６号</span><span class="qn">4個</span></li><li><span class="cn">ショコラキューブAT</span><span class="qn">4個</span></li><li><span class="cn">バナーヌ・ショコラータ</span><span class="qn">4個</span></li><li><span class="cn">Aシャンテオフレーズ　５号</span><span class="qn">3個</span></li><li><span class="cn">クールショコラ</span><span class="qn">3個</span></li><li><span class="cn">Aパリジェンヌ</span><span class="qn">2個</span></li><li><span class="cn">グレナダ　ロング</span><span class="qn">2個</span></li><li><span class="cn">Aシャンテオフレーズ　４号</span><span class="qn">1個</span></li><li><span class="cn">Aパリジェンヌ 5号</span><span class="qn">1個</span></li><li><span class="cn">シシリアーノAT</span><span class="qn">1個</span></li><li><span class="cn">ヴェルベッド・ベリー</span><span class="qn">1個</span></li></ul></details><div class="crow zero"><span class="cn">半生</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section class="ipanel" data-p="メゾン" style="display:none"><h2>メゾン</h2><div class="asof">記録日: 2026-08-01</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><details class="crow ok"><summary><span class="cn">半生</span><span class="cv">1110個</span></summary><ul class="ilist"><li><span class="cn">はんじゅくちーず</span><span class="qn">708個</span></li><li><span class="cn">半熟ぷりん</span><span class="qn">350個</span></li><li><span class="cn">ちーず１０個入り</span><span class="qn">16個</span></li><li><span class="cn">商品#undefined</span><span class="qn">16個</span></li><li><span class="cn">わが家のロール</span><span class="qn">14個</span></li><li><span class="cn">半熟スフレロール</span><span class="qn">6個</span></li></ul></details><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><script>document.querySelectorAll(".stab").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll(".stab").forEach(function(x){x.classList.toggle("on",x===b);});document.querySelectorAll(".ipanel").forEach(function(p){p.style.display=(p.dataset.p===b.dataset.t)?"":"none";});});});</script>
  <section><h2>📊 店舗別 予測売上（万円）</h2><canvas id="pred"></canvas></section>
  <section><h2>🏭 工場別 製造割当（カテゴリ別）</h2><canvas id="factory"></canvas></section>
  <section><h2>🗑 廃棄ロス / 📥 入力</h2>
