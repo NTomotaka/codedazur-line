@@ -41,11 +41,11 @@
  .ipanel h2{font-size:15px;margin:0 0 8px;color:#5B331E}
 </style></head><body>
  <h1>🍰 コートダジュール ダッシュボード</h1>
- <div class="ts">最終更新: 2026-08-07 02:26 JST ／ 管理者専用</div>
+ <div class="ts">最終更新: 2026-08-07 02:56 JST ／ 管理者専用</div>
  <a class="detail-link" href="https://cdz-dashboard.wellcon.biz" target="_blank">📊 詳細ダッシュボードを開く →</a>
  <div class="kpis">
    <div class="kpi"><div class="v">287万円</div><div class="l">本日予測売上</div></div>
-   <div class="kpi"><div class="v">約72,347円</div><div class="l">廃棄/店舗日</div></div>
+   <div class="kpi"><div class="v">約71,353円</div><div class="l">廃棄/店舗日</div></div>
    <div class="kpi"><div class="v">33%</div><div class="l">記録達成率</div></div>
  </div>
  <h2 style="margin:0 0 8px;font-size:14px;color:#866134">📦 店舗別 在庫（タップで商品明細）</h2>
@@ -54,7 +54,7 @@
  <details class="ana" data-chart="factory"><summary>🏭 工場別 製造割当（カテゴリ別）</summary><canvas id="factory"></canvas></details>
  <details class="ana" data-chart="cov"><summary>🗑 廃棄ロス / 📥 入力状況</summary>
    <canvas id="cov"></canvas>
-   <p class="note">記録 42日/89店舗日・年換算 約7,162万円</p>
+   <p class="note">記録 42日/89店舗日・年換算 約7,064万円</p>
    <p class="note warn">⏳ 昨日未記録: 本店 / メゾン</p>
  </details>
  <details><summary>📋 今日の生産・配送プラン（詳細）</summary><pre>☀️ おはようございます！
@@ -67,18 +67,18 @@
 
 🍰 必要生産数（カテゴリ別） 📥 繰越=昨夜の入力残在庫（入力のあった店のみ）
   本店: 生695 / 半生254 / 焼548 / 冷36
-  つくばイオン: 生420 / 半生146（繰越822+新規0） / 焼287 / 冷10
+  つくばイオン: 生420（繰越53+新規367） / 半生146 / 焼287 / 冷10
   メゾン: 生596 / 半生207 / 焼445 / 冷29
 
 🏭 工場別の製造割当（新規製造分・イオン分含む）
-  本店工場: 生905 / 半生254 / 焼692 / 冷41
-  メゾン工場: 生806 / 半生207 / 焼588 / 冷34
+  本店工場: 生879 / 半生327 / 焼692 / 冷41
+  メゾン工場: 生779 / 半生280 / 焼588 / 冷34
   ※イオン分は本店・メゾン工場で半分ずつ
 
 🚚 配送計画（イオンへ 1便構成）
   【平日朝便】
-    09:30 本店→つくばイオン 生210 / 焼144 / 冷5
-    09:30 メゾン→つくばイオン 生210 / 焼143 / 冷5
+    09:30 本店→つくばイオン 生184 / 半生73 / 焼144 / 冷5
+    09:30 メゾン→つくばイオン 生183 / 半生73 / 焼143 / 冷5
 
 ⚠️ 注意
   ・生クリームデコ: 最低5個キープ
@@ -88,7 +88,7 @@
 🗑 昨日の閉店残が未記録: 本店 ・ メゾン
   → 紙メモを撮って『記録コマンド』を送るだけで反映されます</pre></details>
 <script>
- var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [116.8, 71.4, 99.0]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [905, 806]}, {"label": "半生", "color": "#E18600", "data": [254, 207]}, {"label": "焼", "color": "#866134", "data": [692, 588]}, {"label": "冷", "color": "#42B6EE", "data": [41, 34]}]}, "cov": {"recorded": 7, "possible": 21, "rate": 33}};
+ var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [116.8, 71.4, 99.0]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [879, 779]}, {"label": "半生", "color": "#E18600", "data": [327, 280]}, {"label": "焼", "color": "#866134", "data": [692, 588]}, {"label": "冷", "color": "#42B6EE", "data": [41, 34]}]}, "cov": {"recorded": 7, "possible": 21, "rate": 33}};
  var co = {plugins:{legend:{labels:{font:{size:11}}}},maintainAspectRatio:false,scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}};
  // 分析グラフは折りたたみ内にあるため、開いた時に初回だけ生成する（閉じたまま作るとCanvas幅0で崩れるため）
  var _charts = {};
