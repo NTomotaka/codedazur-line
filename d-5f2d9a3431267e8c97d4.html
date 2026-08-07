@@ -41,12 +41,12 @@
  .ipanel h2{font-size:15px;margin:0 0 8px;color:#5B331E}
 </style></head><body>
  <h1>🍰 コートダジュール ダッシュボード</h1>
- <div class="ts">最終更新: 2026-08-07 23:56 JST ／ 管理者専用</div>
+ <div class="ts">最終更新: 2026-08-08 00:26 JST ／ 管理者専用</div>
  <a class="detail-link" href="https://cdz-dashboard.wellcon.biz" target="_blank">📊 詳細ダッシュボードを開く →</a>
  <div class="kpis">
-   <div class="kpi"><div class="v">287万円</div><div class="l">本日予測売上</div></div>
+   <div class="kpi"><div class="v">397万円</div><div class="l">本日予測売上</div></div>
    <div class="kpi"><div class="v">約71,969円</div><div class="l">廃棄/店舗日</div></div>
-   <div class="kpi"><div class="v">38%</div><div class="l">記録達成率</div></div>
+   <div class="kpi"><div class="v">29%</div><div class="l">記録達成率</div></div>
  </div>
  <h2 style="margin:0 0 8px;font-size:14px;color:#866134">📦 店舗別 在庫（タップで商品明細）</h2>
  <div class="store-tabs"><button class="stab on" data-t="本店">本店</button><button class="stab" data-t="つくばイオン">イオン</button><button class="stab" data-t="メゾン">メゾン</button></div><section class="ipanel" data-p="本店"><h2>本店</h2><div class="asof">記録日: 2026-07-24</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><details class="crow ok"><summary><span class="cn">半生</span><span class="cv">1337個</span></summary><ul class="ilist"><li><span class="cn">はんじゅくちーず単品</span><span class="qn">1095個</span></li><li><span class="cn">半熟ぷりん</span><span class="qn">217個</span></li><li><span class="cn">わが家のロール</span><span class="qn">20個</span></li><li><span class="cn">半熟スフレロール</span><span class="qn">5個</span></li></ul></details><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section class="ipanel" data-p="つくばイオン" style="display:none"><h2>つくばイオン</h2><div class="asof">記録日: 2026-08-07</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><details class="crow ok"><summary><span class="cn">半生</span><span class="cv">989個</span></summary><ul class="ilist"><li><span class="cn">はんじゅくちーず単品</span><span class="qn">870個</span></li><li><span class="cn">半熟ぷりん</span><span class="qn">119個</span></li></ul></details><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><section class="ipanel" data-p="メゾン" style="display:none"><h2>メゾン</h2><div class="asof">記録日: 2026-08-01</div><div class="crow zero"><span class="cn">生</span><span class="cv">在庫なし</span></div><details class="crow ok"><summary><span class="cn">半生</span><span class="cv">1094個</span></summary><ul class="ilist"><li><span class="cn">はんじゅくちーず</span><span class="qn">708個</span></li><li><span class="cn">半熟ぷりん</span><span class="qn">350個</span></li><li><span class="cn">ちーず１０個入り</span><span class="qn">16個</span></li><li><span class="cn">わが家のロール</span><span class="qn">14個</span></li><li><span class="cn">半熟スフレロール</span><span class="qn">6個</span></li></ul></details><div class="crow zero"><span class="cn">焼</span><span class="cv">在庫なし</span></div><div class="crow zero"><span class="cn">冷</span><span class="cv">在庫なし</span></div></section><script>document.querySelectorAll(".stab").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll(".stab").forEach(function(x){x.classList.toggle("on",x===b);});document.querySelectorAll(".ipanel").forEach(function(p){p.style.display=(p.dataset.p===b.dataset.t)?"":"none";});});});</script>
@@ -58,37 +58,39 @@
    <p class="note warn">⏳ 昨日未記録: 本店 / メゾン</p>
  </details>
  <details><summary>📋 今日の生産・配送プラン（詳細）</summary><pre>☀️ おはようございます！
-📅 2026-08-07（金） / 天気: 雨 (24-31℃)
+📅 2026-08-08（土） / 天気: 晴 (24-33℃)
 
-📊 予測売上（3店舗合計 287万円）
-  本店      117万円 ━━━━━━━━━━━
-  つくばイオン 71.4万円 ━━━━━━━
-  メゾン    99.0万円 ━━━━━━━━━
+📊 予測売上（3店舗合計 397万円）
+  本店      149万円 ━━━━━━━━━━━━━━
+  つくばイオン 90.5万円 ━━━━━━━━━
+  メゾン     158万円 ━━━━━━━━━━━━━━━
 
 🍰 必要生産数（カテゴリ別） 📥 繰越=昨夜の入力残在庫（入力のあった店のみ）
-  本店: 生695 / 半生254 / 焼548 / 冷36
-  つくばイオン: 生420（繰越53+新規367） / 半生146 / 焼287 / 冷10
-  メゾン: 生596 / 半生207 / 焼445 / 冷29
+  本店: 生886 / 半生324 / 焼699 / 冷46
+  つくばイオン: 生532 / 半生185（繰越989+新規0） / 焼363 / 冷13
+  メゾン: 生950 / 半生331 / 焼709 / 冷46
 
 🏭 工場別の製造割当（新規製造分・イオン分含む）
-  本店工場: 生879 / 半生327 / 焼692 / 冷41
-  メゾン工場: 生779 / 半生280 / 焼588 / 冷34
+  本店工場: 生1152 / 半生324 / 焼881 / 冷53
+  メゾン工場: 生1216 / 半生331 / 焼890 / 冷52
   ※イオン分は本店・メゾン工場で半分ずつ
 
-🚚 配送計画（イオンへ 1便構成）
-  【平日朝便】
-    09:30 本店→つくばイオン 生184 / 半生73 / 焼144 / 冷5
-    09:30 メゾン→つくばイオン 生183 / 半生73 / 焼143 / 冷5
+🚚 配送計画（イオンへ 2便構成）
+  【土曜朝便】
+    09:30 本店→つくばイオン 生133 / 焼91 / 冷4
+    09:30 メゾン→つくばイオン 生133 / 焼91 / 冷3
+  【土曜午後便】
+    14:00 本店→つくばイオン 生133 / 焼91 / 冷3
+    14:00 メゾン→つくばイオン 生133 / 焼90 / 冷3
 
 ⚠️ 注意
   ・生クリームデコ: 最低5個キープ
-  ・雨予報: 本店・つくばイオンは小幅減 / メゾンは大きく減る傾向
   ・15時に再判断（ショーケース充足率チェック）
 
 🗑 昨日の閉店残が未記録: 本店 ・ メゾン
   → 紙メモを撮って『記録コマンド』を送るだけで反映されます</pre></details>
 <script>
- var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [116.8, 71.4, 99.0]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [879, 779]}, {"label": "半生", "color": "#E18600", "data": [327, 280]}, {"label": "焼", "color": "#866134", "data": [692, 588]}, {"label": "冷", "color": "#42B6EE", "data": [41, 34]}]}, "cov": {"recorded": 8, "possible": 21, "rate": 38}};
+ var D = {"pred": {"labels": ["本店", "イオン", "メゾン"], "values": [148.9, 90.5, 157.9]}, "factory": {"stores": ["本店工場", "メゾン工場"], "cats": [{"label": "生", "color": "#F69D9D", "data": [1152, 1216]}, {"label": "半生", "color": "#E18600", "data": [324, 331]}, {"label": "焼", "color": "#866134", "data": [881, 890]}, {"label": "冷", "color": "#42B6EE", "data": [53, 52]}]}, "cov": {"recorded": 6, "possible": 21, "rate": 29}};
  var co = {plugins:{legend:{labels:{font:{size:11}}}},maintainAspectRatio:false,scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}};
  // 分析グラフは折りたたみ内にあるため、開いた時に初回だけ生成する（閉じたまま作るとCanvas幅0で崩れるため）
  var _charts = {};
