@@ -7,3 +7,5 @@ token*.json
 *credentials*.json
 logs/
 samples/
+
+HANDOFF.md
